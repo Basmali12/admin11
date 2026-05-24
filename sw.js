@@ -12,16 +12,11 @@ const urlsToCache = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
+      // نستخدم Promise.all لضمان تخزين كل ملف على حدة 
+      // بدون no-cors لأن الروابط تدعم مشاركة الموارد (CORS)
       return Promise.all(
         urlsToCache.map(url => {
-          if (url.startsWith('http')) {
-            // معالجة الروابط الخارجية لتفادي أخطاء CORS
-            return fetch(url, { mode: 'no-cors' })
-              .then(response => cache.put(url, response))
-              .catch(err => console.error('Fetch external failed:', url, err));
-          } else {
-            return cache.add(url).catch(err => console.error('Cache add failed:', url, err));
-          }
+          return cache.add(url).catch(err => console.error('Cache add failed for:', url, err));
         })
       );
     })
