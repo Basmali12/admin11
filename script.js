@@ -1,45 +1,9 @@
-// --- إجبار نافذة التثبيت على الظهور ---
-let deferredPrompt;
-const installModal = document.getElementById('install-modal');
-const installBtn = document.getElementById('install-btn');
-const closeInstallBtn = document.getElementById('close-install');
-
-// تسجيل الـ Service Worker وإظهار النافذة إجبارياً بعد نصف ثانية
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
-        setTimeout(() => { installModal.classList.remove('hidden'); }, 500);
-    });
-} else {
-    setTimeout(() => { installModal.classList.remove('hidden'); }, 500);
-}
-
-// تخزين الحدث إذا سمح المتصفح بالتثبيت الحقيقي
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-});
-
-installBtn.addEventListener('click', async () => {
-    installModal.classList.add('hidden');
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        deferredPrompt = null;
-    } else {
-        alert("لا يمكن التثبيت الفعلي لأنك تفتح الملف مباشرة من الكمبيوتر. لكي يتم التثبيت بنجاح يجب رفع الموقع على استضافة إنترنت.");
-    }
-});
-
-closeInstallBtn.addEventListener('click', () => {
-    installModal.classList.add('hidden');
-});
-
-// --- باقي أكواد التطبيق بالكامل ---
+// Initialize Lucide Icons
 lucide.createIcons();
 
 const IMGBB_API_KEY = "b5a7d1d92fcc5c4e9f3185961e9533ed";
 
+// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBnYczto0EvZU-LowX1Ps3NvYALnmmutr0",
     authDomain: "ljioik.firebaseapp.com",
@@ -52,9 +16,10 @@ const firebaseConfig = {
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// App State
 let isAuthenticated = false;
 let currentTab = 'products';
-let viewMode = 'list'; 
+let viewMode = 'list'; // 'list' or 'form'
 
 let productsData = [];
 let adsData = [];
@@ -63,6 +28,7 @@ let unsubProducts = null;
 let unsubAds = null;
 let unsubBanners = null;
 
+// DOM
 const loginScreen = document.getElementById('login-screen');
 const loginForm = document.getElementById('login-form');
 const passwordInput = document.getElementById('password');
@@ -73,6 +39,7 @@ const navTabs = document.querySelectorAll('.nav-tab');
 const contentArea = document.getElementById('content-area');
 const loader = document.getElementById('loader');
 
+// Login Logic
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     if (passwordInput.value === '1001') {
@@ -99,6 +66,7 @@ logoutBtn.addEventListener('click', () => {
     stopSubscriptions();
 });
 
+// Image Utils
 function compressImage(file, quality = 0.8) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -110,7 +78,7 @@ function compressImage(file, quality = 0.8) {
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
-                const MAX_WIDTH = 800;
+                const MAX_WIDTH = 800; // تقليص الحجم
                 if (width > MAX_WIDTH) {
                     height = Math.round((height * MAX_WIDTH) / width);
                     width = MAX_WIDTH;
@@ -119,7 +87,9 @@ function compressImage(file, quality = 0.8) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                canvas.toBlob((blob) => { resolve(blob); }, 'image/webp', quality);
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/webp', quality);
             };
             img.onerror = reject;
         };
@@ -130,17 +100,27 @@ function compressImage(file, quality = 0.8) {
 async function uploadToImgBB(blob) {
     const formData = new FormData();
     formData.append('image', blob, 'image.jpg');
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: 'POST',
+        body: formData,
+    });
     const data = await response.json();
-    if (data.success) { return { url: data.data.url, deleteUrl: data.data.delete_url }; }
+    if (data.success) {
+        return { url: data.data.url, deleteUrl: data.data.delete_url };
+    }
     throw new Error('Upload failed');
 }
 
 async function deleteFromImgBB(deleteUrl) {
     if (!deleteUrl) return;
-    try { await fetch(deleteUrl, { mode: 'no-cors' }); } catch (e) { }
+    try {
+        await fetch(deleteUrl, { mode: 'no-cors' });
+    } catch (e) {
+        console.error("ImgBB delete fetch error:", e);
+    }
 }
 
+// Subscriptions
 function startSubscriptions() {
     loader.classList.remove('hidden');
     
@@ -167,6 +147,7 @@ function stopSubscriptions() {
     if(unsubBanners) unsubBanners();
 }
 
+// UI Navigation
 navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
         currentTab = tab.dataset.tab;
@@ -187,12 +168,13 @@ navTabs.forEach(tab => {
 });
 
 function renderActiveTab() {
-    if (viewMode === 'form') return;
+    if (viewMode === 'form') return; // Handled by individual renderers
     if (currentTab === 'products') renderProductsList();
     if (currentTab === 'ads') renderAdsList();
     if (currentTab === 'banners') renderBannersList();
 }
 
+// ---------------- PRODUCTS ---------------- //
 function renderProductsList() {
     let topHtml = `
         <div class="flex justify-between items-center mb-6 animate-slide-up">
@@ -243,9 +225,14 @@ function renderProductsList() {
 window.deleteProduct = async (id, deleteUrl) => {
     if (!confirm('هل أنت متأكد من حذف المنتج؟')) return;
     try {
-        if (deleteUrl && deleteUrl !== 'undefined') await deleteFromImgBB(deleteUrl);
+        if (deleteUrl && deleteUrl !== 'undefined') {
+            try { await deleteFromImgBB(deleteUrl); } catch(e) { console.error('ImgBB delete', e); }
+        }
         await db.collection('products').doc(id).delete();
-    } catch (e) { alert('حدث خطأ أثناء الحذف: ' + e.message); }
+    } catch (e) {
+        console.error("Delete Error:", e);
+        alert('حدث خطأ أثناء الحذف: ' + e.message);
+    }
 };
 
 window.showProductForm = () => {
@@ -304,6 +291,7 @@ window.showProductForm = () => {
     `;
     lucide.createIcons();
     
+    // Image Preview logic
     document.getElementById('pf-image').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -317,6 +305,7 @@ window.showProductForm = () => {
         }
     });
 
+    // Form submit
     document.getElementById('product-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('pf-submit');
@@ -331,6 +320,7 @@ window.showProductForm = () => {
             const compressed = await compressImage(file);
             const imgRes = await uploadToImgBB(compressed);
             
+            // Gather links
             const linkElements = document.querySelectorAll('.pf-link-item');
             const links = [];
             linkElements.forEach((el, index) => {
@@ -381,6 +371,7 @@ window.cancelForm = () => {
     renderActiveTab();
 };
 
+// ---------------- ADS ---------------- //
 function renderAdsList() {
     let topHtml = `
         <div class="flex justify-between items-center mb-6 animate-slide-up">
@@ -424,9 +415,14 @@ function renderAdsList() {
 window.deleteAd = async (id, deleteUrl) => {
     if (!confirm('هل أنت متأكد من حذف الإعلان؟')) return;
     try {
-        if (deleteUrl && deleteUrl !== 'undefined') await deleteFromImgBB(deleteUrl);
+        if (deleteUrl && deleteUrl !== 'undefined') {
+            try { await deleteFromImgBB(deleteUrl); } catch(e) { console.error('ImgBB delete', e); }
+        }
         await db.collection('ads').doc(id).delete();
-    } catch (e) { alert('حدث خطأ أثناء الحذف: ' + e.message); }
+    } catch (e) {
+        console.error("Delete Error:", e);
+        alert('حدث خطأ أثناء الحذف: ' + e.message);
+    }
 };
 
 window.showAdForm = () => {
@@ -500,6 +496,7 @@ window.showAdForm = () => {
     });
 };
 
+// ---------------- BANNERS ---------------- //
 function renderBannersList() {
     let topHtml = `
         <div class="flex justify-between items-center mb-6 animate-slide-up">
@@ -546,9 +543,14 @@ function renderBannersList() {
 window.deleteBanner = async (id, deleteUrl) => {
     if (!confirm('هل أنت متأكد من الحذف؟')) return;
     try {
-        if (deleteUrl && deleteUrl !== 'undefined') await deleteFromImgBB(deleteUrl);
+        if (deleteUrl && deleteUrl !== 'undefined') {
+            try { await deleteFromImgBB(deleteUrl); } catch(e) { console.error('ImgBB delete', e); }
+        }
         await db.collection('banners').doc(id).delete();
-    } catch (e) { alert('حدث خطأ أثناء الحذف: ' + e.message); }
+    } catch (e) {
+        console.error("Delete Error:", e);
+        alert('حدث خطأ أثناء الحذف: ' + e.message);
+    }
 };
 
 window.showBannerForm = () => {
@@ -637,3 +639,40 @@ window.showBannerForm = () => {
         }
     });
 };
+
+// ---------------- PWA INSTALLATION ---------------- //
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+        });
+    });
+}
+
+let deferredPrompt;
+const installModal = document.getElementById('install-modal');
+const installBtn = document.getElementById('install-btn');
+const closeInstallBtn = document.getElementById('close-install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if(installModal) installModal.classList.remove('hidden');
+});
+
+if(installBtn) {
+    installBtn.addEventListener('click', async () => {
+        installModal.classList.add('hidden');
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        }
+    });
+}
+
+if(closeInstallBtn) {
+    closeInstallBtn.addEventListener('click', () => {
+        installModal.classList.add('hidden');
+    });
+}
