@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم</title>
-    
+    <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#4f46e5">
-
-    <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -17,21 +15,6 @@
     <div class="fixed inset-0 z-0 pointer-events-none opacity-70">
         <div class="absolute top-[-15%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-indigo-300/40 to-purple-300/40 blur-[80px]"></div>
         <div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-blue-300/40 to-cyan-300/40 blur-[100px]"></div>
-    </div>
-
-    <div id="install-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <div class="bg-white rounded-[2rem] p-8 max-w-sm w-full text-center shadow-2xl relative border border-gray-100 animate-slide-up">
-            <button id="close-install" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors bg-gray-50 rounded-full p-1">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            <img src="https://raw.githubusercontent.com/mdn/pwa-examples/main/a2hs/images/icon-192.png" alt="App Icon" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-md object-cover">
-            <h3 class="text-2xl font-extrabold text-gray-800 mb-2">تثبيت التطبيق</h3>
-            <p class="text-gray-500 mb-6 font-medium text-sm">قم بتثبيت التطبيق الآن للوصول السريع وتجربة ملء الشاشة بدون الحاجة للمتصفح.</p>
-            <button id="install-btn" class="w-full py-3.5 text-lg font-bold text-white bg-indigo-600 rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2">
-                <i data-lucide="download" class="w-5 h-5"></i>
-                تثبيت الآن
-            </button>
-        </div>
     </div>
 
     <div id="login-screen" class="relative z-50 flex items-center justify-center min-h-screen p-4">
@@ -85,6 +68,18 @@
                 </button>
             </div>
         </nav>
+    </div>
+
+    <div id="install-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="bg-white/80 backdrop-blur-2xl border border-white/60 p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center">
+            <img src="./icon-192x192.png" alt="أيقونة التطبيق" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm">
+            <h3 class="text-xl font-extrabold text-gray-800 mb-2">تثبيت التطبيق</h3>
+            <p class="text-gray-600 mb-6 font-medium text-sm">قم بتثبيت لوحة التحكم على جهازك للوصول السريع والعمل دون اتصال.</p>
+            <div class="flex gap-4">
+                <button id="install-btn" class="flex-1 py-3 text-white bg-indigo-600 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200/50">تثبيت</button>
+                <button id="close-install-btn" class="flex-1 py-3 text-gray-600 bg-white border border-gray-200 rounded-xl font-bold hover:bg-gray-50 transition-all">إلغاء</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
