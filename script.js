@@ -1,3 +1,37 @@
+// PWA & Install Prompt Setup
+let deferredPrompt;
+const installModal = document.getElementById('install-modal');
+const installBtn = document.getElementById('install-btn');
+const closeInstallBtn = document.getElementById('close-install');
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Error', err));
+    });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installModal.classList.remove('hidden');
+});
+
+installBtn.addEventListener('click', async () => {
+    installModal.classList.add('hidden');
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('User response:', outcome);
+        deferredPrompt = null;
+    }
+});
+
+closeInstallBtn.addEventListener('click', () => {
+    installModal.classList.add('hidden');
+});
+
 // Initialize Lucide Icons
 lucide.createIcons();
 
@@ -259,7 +293,6 @@ window.showProductForm = () => {
                     <textarea id="pf-desc" required rows="3" class="custom-input"></textarea>
                 </div>
                 
-                <!-- روابط المنتج -->
                 <div class="bg-indigo-50/30 p-5 rounded-2xl border border-indigo-100/50">
                     <div class="flex justify-between items-center mb-4">
                         <label class="block text-sm font-bold text-indigo-900 border-b-2 border-indigo-200 pb-1">روابط المنتج</label>
